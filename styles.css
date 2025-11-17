@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+* {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+body {
+    font-family: 'Rajdhani', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.orbitron {
+    font-family: 'Orbitron', monospace;
+}
+
+.tile {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    user-select: none;
+}
+
+.tile:active {
+    transform: scale(0.95);
+}
+
+.tile-valid {
+    animation: pulse-valid 0.6s ease-in-out;
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.8);
+}
+
+.tile-invalid {
+    animation: shake 0.4s ease-in-out;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+}
+
+@keyframes pulse-valid {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.operation-btn {
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.operation-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.operation-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.operation-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.power-up-btn {
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.power-up-btn:hover:not(:disabled) {
+    transform: scale(1.1);
+}
+
+.power-up-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.power-up-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.modal-backdrop {
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.parity-indicator {
+    animation: fadeIn 0.5s ease-out;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.grid-3x3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-4x4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid-5x5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+    .tile {
+        font-size: 1.25rem;
+    }
+}
