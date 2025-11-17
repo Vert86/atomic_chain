@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>⚛️ Atomic Chain - Math Puzzle Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .orbitron {
+            font-family: 'Orbitron', monospace;
+        }
+
+        .tile {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .tile:active {
+            transform: scale(0.95);
+        }
+
+        .tile-valid {
+            animation: pulse-valid 0.6s ease-in-out;
+            box-shadow: 0 0 20px rgba(52, 211, 153, 0.8);
+        }
+
+        .tile-invalid {
+            animation: shake 0.4s ease-in-out;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+        }
+
+        @keyframes pulse-valid {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .operation-btn {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .operation-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .operation-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .operation-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .power-up-btn {
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .power-up-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+
+        .power-up-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .power-up-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .modal-backdrop {
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .parity-indicator {
+            animation: fadeIn 0.5s ease-out;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .grid-3x3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .grid-4x4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .grid-5x5 {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        @media (max-width: 640px) {
+            .tile {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8 fade-in">
+            <h1 class="text-4xl md:text-6xl font-bold text-white orbitron mb-2 float">
+                ⚛️ ATOMIC CHAIN
+            </h1>
+            <p class="text-purple-200 text-lg md:text-xl">Master the Sequence. Respect the Parity.</p>
+        </div>
+
+        <!-- Game Info Panel -->
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 md:p-6 mb-6 text-white">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                    <div class="text-purple-200 text-sm">Level</div>
+                    <div class="text-2xl md:text-3xl font-bold orbitron" id="levelDisplay">1</div>
+                </div>
+                <div>
+                    <div class="text-purple-200 text-sm">Move</div>
+                    <div class="text-2xl md:text-3xl font-bold orbitron" id="moveDisplay">1/3</div>
+                </div>
+                <div>
+                    <div class="text-purple-200 text-sm">Target</div>
+                    <div class="text-2xl md:text-3xl font-bold orbitron" id="targetDisplay">0</div>
+                </div>
+                <div>
+                    <div class="text-purple-200 text-sm">Stars</div>
+                    <div class="text-2xl md:text-3xl font-bold orbitron" id="starsDisplay">⭐0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Operation Display -->
+        <div class="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 mb-6 text-white text-center shadow-2xl">
+            <div class="text-sm md:text-base text-emerald-100 mb-2">NEXT OPERATION</div>
+            <div class="text-4xl md:text-6xl font-bold orbitron" id="currentOperation">+3</div>
+            <div class="text-sm md:text-base text-emerald-100 mt-2" id="constraintDisplay"></div>
+        </div>
+
+        <!-- Game Grid -->
+        <div id="gameGrid" class="grid gap-2 md:gap-3 mb-6 grid-3x3">
+            <!-- Grid tiles will be generated here -->
+        </div>
+
+        <!-- Power-Ups -->
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 md:p-6 mb-6">
+            <h3 class="text-white text-lg md:text-xl font-bold mb-4 orbitron">⚡ POWER-UPS</h3>
+            <div class="grid grid-cols-3 gap-3 md:gap-4">
+                <button id="peekBtn" class="power-up-btn bg-gradient-to-br from-blue-500 to-purple-600 text-white p-4 rounded-xl font-bold disabled:from-gray-500 disabled:to-gray-600">
+                    <div class="text-2xl md:text-3xl mb-1">🔮</div>
+                    <div class="text-xs md:text-sm">Parity Peek</div>
+                    <div class="text-lg md:text-xl orbitron" id="peekCount">0</div>
+                </button>
+                <button id="rewindBtn" class="power-up-btn bg-gradient-to-br from-orange-500 to-red-600 text-white p-4 rounded-xl font-bold disabled:from-gray-500 disabled:to-gray-600">
+                    <div class="text-2xl md:text-3xl mb-1">⏪</div>
+                    <div class="text-xs md:text-sm">Rewind</div>
+                    <div class="text-lg md:text-xl orbitron" id="rewindCount">0</div>
+                </button>
+                <button id="calculatorBtn" class="power-up-btn bg-gradient-to-br from-green-500 to-emerald-600 text-white p-4 rounded-xl font-bold disabled:from-gray-500 disabled:to-gray-600">
+                    <div class="text-2xl md:text-3xl mb-1">🧮</div>
+                    <div class="text-xs md:text-sm">Calculator</div>
+                    <div class="text-lg md:text-xl orbitron" id="calculatorCount">0</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Operation Buttons -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <button class="operation-btn bg-gradient-to-br from-pink-500 to-rose-600 text-white p-4 md:p-6 rounded-xl text-xl md:text-2xl font-bold orbitron shadow-lg" data-op="+1">+1</button>
+            <button class="operation-btn bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-4 md:p-6 rounded-xl text-xl md:text-2xl font-bold orbitron shadow-lg" data-op="-1">-1</button>
+            <button class="operation-btn bg-gradient-to-br from-purple-500 to-violet-600 text-white p-4 md:p-6 rounded-xl text-xl md:text-2xl font-bold orbitron shadow-lg" data-op="×2">×2</button>
+            <button class="operation-btn bg-gradient-to-br from-teal-500 to-cyan-600 text-white p-4 md:p-6 rounded-xl text-xl md:text-2xl font-bold orbitron shadow-lg" data-op="÷2">÷2</button>
+            <button class="operation-btn bg-gradient-to-br from-yellow-500 to-orange-600 text-white p-4 md:p-6 rounded-xl text-xl md:text-2xl font-bold orbitron shadow-lg" data-op="+3">+3</button>
+            <button class="operation-btn bg-gradient-to-br from-green-500 to-emerald-600 text-white p-4 md:p-6 rounded-xl text-xl md:text-2xl font-bold orbitron shadow-lg" data-op="-3">-3</button>
+            <button class="operation-btn bg-gradient-to-br from-red-500 to-pink-600 text-white p-4 md:p-6 rounded-xl text-xl md:text-2xl font-bold orbitron shadow-lg" data-op="+5">+5</button>
+            <button class="operation-btn bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-4 md:p-6 rounded-xl text-xl md:text-2xl font-bold orbitron shadow-lg" data-op="-5">-5</button>
+        </div>
+
+        <!-- Reset Button -->
+        <button id="resetBtn" class="w-full bg-white/20 hover:bg-white/30 backdrop-blur-md text-white p-4 rounded-xl font-bold text-lg transition-all">
+            🔄 RESET LEVEL
+        </button>
+    </div>
+
+    <!-- Modals -->
+    <div id="winModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center transform scale-0 transition-transform duration-300" id="winModalContent">
+            <div class="text-6xl mb-4">🎉</div>
+            <h2 class="text-4xl font-bold text-purple-600 orbitron mb-4">LEVEL COMPLETE!</h2>
+            <div class="text-6xl mb-4" id="starsEarned">⭐⭐⭐</div>
+            <p class="text-gray-600 text-lg mb-6">Perfect sequence! Moving to next level...</p>
+            <div id="powerUpReward" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 rounded-xl mb-4 hidden">
+                <div class="text-2xl mb-2">🎁 Power-Up Unlocked!</div>
+                <div class="text-xl font-bold orbitron" id="powerUpRewardText"></div>
+            </div>
+            <button id="nextLevelBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-bold text-xl w-full hover:scale-105 transition-transform">
+                NEXT LEVEL →
+            </button>
+        </div>
+    </div>
+
+    <div id="loseModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center transform scale-0 transition-transform duration-300" id="loseModalContent">
+            <div class="text-6xl mb-4">❌</div>
+            <h2 class="text-4xl font-bold text-red-600 orbitron mb-4">SEQUENCE FAILED!</h2>
+            <p class="text-gray-600 text-lg mb-6" id="failureReason">Wrong operation or sequence exhausted.</p>
+            <button id="retryBtn" class="bg-gradient-to-r from-red-600 to-orange-600 text-white px-8 py-4 rounded-xl font-bold text-xl w-full hover:scale-105 transition-transform">
+                🔄 TRY AGAIN
+            </button>
+        </div>
+    </div>
+
+    <div id="calculatorModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full">
+            <h3 class="text-2xl font-bold text-purple-600 orbitron mb-4 text-center">🧮 SEQUENCE CALCULATOR</h3>
+            <p class="text-gray-600 mb-4 text-center">Click a tile to see its transformation path</p>
+            <div id="calculatorResult" class="bg-gradient-to-br from-purple-100 to-pink-100 p-6 rounded-xl mb-4 min-h-[100px] flex items-center justify-center">
+                <div class="text-gray-500 text-center">Select a tile to begin</div>
+            </div>
+            <button id="closeCalculatorBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold w-full">
+                CLOSE
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ===== AUDIO SYSTEM =====
+        const AudioSystem = {
+            ctx: null,
+
+            init() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+
+            playSuccess() {
+                if (!this.ctx) this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+                osc.start(now);
+                osc.stop(now + 0.4);
+            },
+
+            playFailure() {
+                if (!this.ctx) this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.setValueAtTime(100, now + 0.2);
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                osc.start(now);
+                osc.stop(now + 0.3);
+            },
+
+            playWin() {
+                if (!this.ctx) this.init();
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.frequency.setValueAtTime(freq, now + i * 0.15);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.5);
+
+                    osc.start(now + i * 0.15);
+                    osc.stop(now + i * 0.15 + 0.5);
+                });
+            },
+
+            playClick() {
+                if (!this.ctx) this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        };
+
+        // ===== LEVEL DEFINITIONS =====
+        const LEVELS = [
+            {
+                id: 1,
+                name: "Foundation",
+                gridSize: 3,
+                target: 0,
+                initialGrid: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                sequence: ["-1", "-1", "+3"],
+                constraints: ["odd", "even", "odd"],
+                powerUpReward: "peek"
+            },
+            {
+                id: 2,
+                name: "Double Down",
+                gridSize: 3,
+                target: 0,
+                initialGrid: [2, 4, 6, 8, 10, 12, 14, 16, 18],
+                sequence: ["÷2", "-1", "+3", "-2"],
+                constraints: ["odd", "even", "odd", "even"],
+                powerUpReward: "rewind"
+            },
+            {
+                id: 3,
+                name: "Triple Threat",
+                gridSize: 3,
+                target: 1,
+                initialGrid: [3, 6, 9, 12, 15, 18, 21, 24, 27],
+                sequence: ["÷3", "+2", "-1"],
+                constraints: ["odd", "odd", "even"],
+                powerUpReward: "calculator"
+            },
+            {
+                id: 4,
+                name: "Odd One Out",
+                gridSize: 3,
+                target: 0,
+                initialGrid: [5, 7, 9, 11, 13, 15, 17, 19, 21],
+                sequence: ["-5", "+2", "÷2", "-1"],
+                constraints: ["even", "even", "odd", "even"],
+                powerUpReward: "peek"
+            },
+            {
+                id: 5,
+                name: "Parity Swap",
+                gridSize: 4,
+                target: 1,
+                initialGrid: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32],
+                sequence: ["÷2", "-5", "+3", "÷2"],
+                constraints: ["odd", "even", "odd", "even"],
+                powerUpReward: "rewind"
+            },
+            {
+                id: 6,
+                name: "The Gauntlet",
+                gridSize: 4,
+                target: 0,
+                initialGrid: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160],
+                sequence: ["÷10", "+1", "×2", "-4"],
+                constraints: ["odd", "even", "even", "even"],
+                powerUpReward: "calculator"
+            },
+            {
+                id: 7,
+                name: "Prime Time",
+                gridSize: 4,
+                target: 1,
+                initialGrid: [7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98, 105, 112],
+                sequence: ["÷7", "+2", "-1", "÷2"],
+                constraints: ["odd", "odd", "even", "odd"],
+                powerUpReward: "peek"
+            },
+            {
+                id: 8,
+                name: "Chain Reaction",
+                gridSize: 4,
+                target: 0,
+                initialGrid: [16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256],
+                sequence: ["÷16", "+3", "×2", "-8"],
+                constraints: ["odd", "even", "even", "even"],
+                powerUpReward: "rewind"
+            },
+            {
+                id: 9,
+                name: "The Nexus",
+                gridSize: 4,
+                target: 1,
+                initialGrid: [9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 144],
+                sequence: ["÷9", "+4", "-3", "÷2"],
+                constraints: ["odd", "odd", "even", "odd"],
+                powerUpReward: "calculator"
+            },
+            {
+                id: 10,
+                name: "Division Trap",
+                gridSize: 5,
+                target: 0,
+                initialGrid: Array.from({length: 25}, (_, i) => (i + 1) * 5),
+                sequence: ["÷5", "-2", "×3", "-1", "÷2"],
+                constraints: ["odd", "even", "odd", "even", "even"],
+                powerUpReward: "peek"
+            },
+            {
+                id: 11,
+                name: "The Matrix",
+                gridSize: 5,
+                target: 1,
+                initialGrid: Array.from({length: 25}, (_, i) => (i + 1) * 4),
+                sequence: ["÷4", "+1", "×2", "-5", "÷2"],
+                constraints: ["odd", "even", "even", "odd", "even"],
+                powerUpReward: "rewind"
+            },
+            {
+                id: 12,
+                name: "Infinity Loop",
+                gridSize: 5,
+                target: 0,
+                initialGrid: Array.from({length: 25}, (_, i) => (i + 1) * 6),
+                sequence: ["÷6", "+5", "-2", "÷2", "+1", "-1"],
+                constraints: ["odd", "even", "even", "odd", "even", "odd"],
+                powerUpReward: "calculator"
+            },
+            {
+                id: 13,
+                name: "Quantum State",
+                gridSize: 5,
+                target: 1,
+                initialGrid: Array.from({length: 25}, (_, i) => (i + 1) * 8),
+                sequence: ["÷8", "+3", "×2", "-7", "÷2"],
+                constraints: ["odd", "even", "even", "odd", "even"],
+                powerUpReward: "peek"
+            },
+            {
+                id: 14,
+                name: "The Singularity",
+                gridSize: 5,
+                target: 0,
+                initialGrid: Array.from({length: 25}, (_, i) => (i + 1) * 12),
+                sequence: ["÷12", "+5", "×2", "-3", "÷2", "+1", "-1"],
+                constraints: ["odd", "even", "even", "odd", "odd", "even", "odd"],
+                powerUpReward: "rewind"
+            },
+            {
+                id: 15,
+                name: "Atomic Finale",
+                gridSize: 5,
+                target: 1,
+                initialGrid: Array.from({length: 25}, (_, i) => (i + 1) * 10),
+                sequence: ["÷10", "+7", "×2", "-5", "÷2", "+2", "-1", "÷2"],
+                constraints: ["odd", "even", "even", "odd", "odd", "odd", "even", "odd"],
+                powerUpReward: "calculator"
+            }
+        ];
+
+        // ===== GAME STATE =====
+        class GameState {
+            constructor() {
+                this.currentLevel = 0;
+                this.grid = [];
+                this.operationSequence = [];
+                this.currentStepIndex = 0;
+                this.targetNumber = 0;
+                this.gridSize = 3;
+                this.constraints = [];
+                this.powerUps = {
+                    peek: 0,
+                    rewind: 0,
+                    calculator: 0
+                };
+                this.lastState = null;
+                this.totalStars = 0;
+                this.calculatorMode = false;
+                this.peekActive = false;
+                this.peekTimeout = null;
+            }
+
+            loadLevel(levelIndex) {
+                const level = LEVELS[levelIndex];
+                if (!level) return false;
+
+                this.currentLevel = levelIndex;
+                this.grid = [...level.initialGrid];
+                this.operationSequence = [...level.sequence];
+                this.currentStepIndex = 0;
+                this.targetNumber = level.target;
+                this.gridSize = level.gridSize;
+                this.constraints = [...level.constraints];
+                this.lastState = null;
+                this.calculatorMode = false;
+                this.peekActive = false;
+
+                return true;
+            }
+
+            saveState() {
+                this.lastState = {
+                    grid: [...this.grid],
+                    currentStepIndex: this.currentStepIndex
+                };
+            }
+
+            restoreState() {
+                if (!this.lastState) return false;
+                this.grid = [...this.lastState.grid];
+                this.currentStepIndex = this.lastState.currentStepIndex;
+                this.lastState = null;
+                return true;
+            }
+
+            addPowerUp(type) {
+                if (this.powerUps[type] !== undefined) {
+                    this.powerUps[type]++;
+                }
+            }
+
+            usePowerUp(type) {
+                if (this.powerUps[type] > 0) {
+                    this.powerUps[type]--;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        const gameState = new GameState();
+
+        // ===== OPERATION LOGIC =====
+        function parseOperation(opStr) {
+            // Convert display symbols to internal format
+            opStr = opStr.replace('×', '*').replace('÷', '/');
+
+            const match = opStr.match(/([+\-*/])(\d+)/);
+            if (!match) return null;
+
+            const operator = match[1];
+            const value = parseInt(match[2]);
+
+            return { operator, value };
+        }
+
+        function applyOperation(number, opStr) {
+            const op = parseOperation(opStr);
+            if (!op) return number;
+
+            switch (op.operator) {
+                case '+': return number + op.value;
+                case '-': return number - op.value;
+                case '*': return number * op.value;
+                case '/': return Math.floor(number / op.value);
+                default: return number;
+            }
+        }
+
+        function isEven(n) {
+            return n % 2 === 0;
+        }
+
+        function isOdd(n) {
+            return n % 2 !== 0;
+        }
+
+        function checkConstraint(result, constraint) {
+            if (constraint === "even") return isEven(result);
+            if (constraint === "odd") return isOdd(result);
+            return true;
+        }
+
+        // ===== CORE GAME LOGIC =====
+        function handleMove(selectedOperation) {
+            // CHECK 1: Sequence Match
+            const requiredOperation = gameState.operationSequence[gameState.currentStepIndex];
+            if (selectedOperation !== requiredOperation) {
+                showFailure("Wrong operation! Expected: " + requiredOperation);
+                return false;
+            }
+
+            // Save state for rewind
+            gameState.saveState();
+
+            // CHECK 2: Parity/Constraint Match & Execution
+            const constraint = gameState.constraints[gameState.currentStepIndex];
+            const newGrid = [];
+            let validMoves = 0;
+            let invalidMoves = 0;
+
+            for (let i = 0; i < gameState.grid.length; i++) {
+                const oldValue = gameState.grid[i];
+                const newValue = applyOperation(oldValue, selectedOperation);
+
+                if (checkConstraint(newValue, constraint)) {
+                    newGrid[i] = newValue;
+                    validMoves++;
+                    highlightTile(i, true);
+                } else {
+                    newGrid[i] = oldValue; // Don't modify this tile
+                    invalidMoves++;
+                    highlightTile(i, false);
+                }
+            }
+
+            // Update grid
+            gameState.grid = newGrid;
+            gameState.currentStepIndex++;
+
+            // Wait for animation, then check win/loss
+            setTimeout(() => {
+                updateUI();
+
+                // CHECK 3: Win/Loss
+                const allTarget = gameState.grid.every(n => n === gameState.targetNumber);
+
+                if (allTarget) {
+                    showWin();
+                    return true;
+                }
+
+                if (gameState.currentStepIndex >= gameState.operationSequence.length) {
+                    showFailure("Sequence exhausted! Not all tiles reached the target.");
+                    return false;
+                }
+
+                AudioSystem.playSuccess();
+            }, 600);
+
+            return true;
+        }
+
+        // ===== UI RENDERING =====
+        function renderGrid() {
+            const gridElement = document.getElementById('gameGrid');
+            gridElement.innerHTML = '';
+
+            // Set grid class based on size
+            gridElement.className = `grid gap-2 md:gap-3 mb-6 grid-${gameState.gridSize}x${gameState.gridSize}`;
+
+            gameState.grid.forEach((value, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile bg-white rounded-xl flex items-center justify-center font-bold orbitron shadow-lg';
+
+                // Responsive sizing
+                const sizeClass = gameState.gridSize === 3 ? 'text-3xl md:text-4xl p-6 md:p-8' :
+                                 gameState.gridSize === 4 ? 'text-2xl md:text-3xl p-4 md:p-6' :
+                                 'text-xl md:text-2xl p-3 md:p-4';
+                tile.className += ' ' + sizeClass;
+
+                // Color based on value
+                if (value === gameState.targetNumber) {
+                    tile.className += ' bg-gradient-to-br from-green-400 to-emerald-500 text-white';
+                } else if (value < 0) {
+                    tile.className += ' bg-gradient-to-br from-red-400 to-rose-500 text-white';
+                } else {
+                    tile.className += ' bg-gradient-to-br from-purple-400 to-pink-500 text-white';
+                }
+
+                tile.textContent = value;
+                tile.dataset.index = index;
+
+                // Calculator mode click handler
+                if (gameState.calculatorMode) {
+                    tile.style.cursor = 'pointer';
+                    tile.addEventListener('click', () => showCalculatorPath(index));
+                }
+
+                gridElement.appendChild(tile);
+            });
+        }
+
+        function updateUI() {
+            // Update level and move display
+            document.getElementById('levelDisplay').textContent = gameState.currentLevel + 1;
+            document.getElementById('moveDisplay').textContent =
+                `${gameState.currentStepIndex + 1}/${gameState.operationSequence.length}`;
+            document.getElementById('targetDisplay').textContent = gameState.targetNumber;
+            document.getElementById('starsDisplay').textContent = '⭐' + gameState.totalStars;
+
+            // Update current operation
+            const currentOp = gameState.operationSequence[gameState.currentStepIndex];
+            if (currentOp) {
+                document.getElementById('currentOperation').textContent = currentOp;
+
+                // Show constraint if peek is active
+                if (gameState.peekActive) {
+                    const constraint = gameState.constraints[gameState.currentStepIndex];
+                    document.getElementById('constraintDisplay').textContent =
+                        `MUST BE ${constraint.toUpperCase()}`;
+                } else {
+                    document.getElementById('constraintDisplay').textContent = '';
+                }
+            } else {
+                document.getElementById('currentOperation').textContent = '—';
+                document.getElementById('constraintDisplay').textContent = '';
+            }
+
+            // Update power-up counts
+            document.getElementById('peekCount').textContent = gameState.powerUps.peek;
+            document.getElementById('rewindCount').textContent = gameState.powerUps.rewind;
+            document.getElementById('calculatorCount').textContent = gameState.powerUps.calculator;
+
+            // Enable/disable power-up buttons
+            document.getElementById('peekBtn').disabled = gameState.powerUps.peek === 0;
+            document.getElementById('rewindBtn').disabled = gameState.powerUps.rewind === 0 || !gameState.lastState;
+            document.getElementById('calculatorBtn').disabled = gameState.powerUps.calculator === 0;
+
+            // Render grid
+            renderGrid();
+        }
+
+        function highlightTile(index, isValid) {
+            const tiles = document.querySelectorAll('.tile');
+            if (tiles[index]) {
+                tiles[index].classList.add(isValid ? 'tile-valid' : 'tile-invalid');
+                setTimeout(() => {
+                    tiles[index].classList.remove('tile-valid', 'tile-invalid');
+                }, 600);
+            }
+        }
+
+        // ===== MODALS =====
+        function showWin() {
+            AudioSystem.playWin();
+
+            const level = LEVELS[gameState.currentLevel];
+            gameState.totalStars += 3;
+
+            // Award power-up
+            if (level.powerUpReward) {
+                gameState.addPowerUp(level.powerUpReward);
+                document.getElementById('powerUpReward').classList.remove('hidden');
+
+                const rewardNames = {
+                    peek: '🔮 Parity Peek',
+                    rewind: '⏪ Rewind',
+                    calculator: '🧮 Sequence Calculator'
+                };
+                document.getElementById('powerUpRewardText').textContent = rewardNames[level.powerUpReward];
+            } else {
+                document.getElementById('powerUpReward').classList.add('hidden');
+            }
+
+            const modal = document.getElementById('winModal');
+            const content = document.getElementById('winModalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => content.style.transform = 'scale(1)', 10);
+        }
+
+        function showFailure(reason) {
+            AudioSystem.playFailure();
+
+            document.getElementById('failureReason').textContent = reason;
+
+            const modal = document.getElementById('loseModal');
+            const content = document.getElementById('loseModalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => content.style.transform = 'scale(1)', 10);
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            const content = modal.querySelector('div[id$="Content"]') || modal.querySelector('div');
+            content.style.transform = 'scale(0)';
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // ===== POWER-UPS =====
+        function usePeek() {
+            if (!gameState.usePowerUp('peek')) return;
+
+            AudioSystem.playClick();
+            gameState.peekActive = true;
+
+            // Clear existing timeout
+            if (gameState.peekTimeout) clearTimeout(gameState.peekTimeout);
+
+            // Show constraints for next 3 steps
+            updateUI();
+
+            // Show floating indicator
+            showParityIndicator();
+
+            // Auto-disable after 10 seconds
+            gameState.peekTimeout = setTimeout(() => {
+                gameState.peekActive = false;
+                updateUI();
+            }, 10000);
+        }
+
+        function useRewind() {
+            if (!gameState.usePowerUp('rewind')) return;
+            if (!gameState.restoreState()) return;
+
+            AudioSystem.playClick();
+            updateUI();
+        }
+
+        function useCalculator() {
+            if (!gameState.usePowerUp('calculator')) return;
+
+            AudioSystem.playClick();
+            gameState.calculatorMode = true;
+
+            const modal = document.getElementById('calculatorModal');
+            modal.classList.remove('hidden');
+
+            // Update grid to show clickable tiles
+            renderGrid();
+        }
+
+        function showCalculatorPath(tileIndex) {
+            const startValue = gameState.grid[tileIndex];
+            let currentValue = startValue;
+            const path = [currentValue];
+
+            // Simulate remaining operations
+            for (let i = gameState.currentStepIndex; i < gameState.operationSequence.length; i++) {
+                const op = gameState.operationSequence[i];
+                const constraint = gameState.constraints[i];
+                const newValue = applyOperation(currentValue, op);
+
+                if (checkConstraint(newValue, constraint)) {
+                    currentValue = newValue;
+                } // else keep same value
+
+                path.push(currentValue);
+            }
+
+            // Display path
+            const resultDiv = document.getElementById('calculatorResult');
+            resultDiv.innerHTML = `
+                <div class="text-center">
+                    <div class="text-sm text-gray-600 mb-2">Transformation Path:</div>
+                    <div class="text-2xl font-bold orbitron text-purple-600">
+                        ${path.join(' → ')}
+                    </div>
+                    <div class="mt-4 text-sm ${path[path.length - 1] === gameState.targetNumber ? 'text-green-600' : 'text-red-600'}">
+                        ${path[path.length - 1] === gameState.targetNumber ? '✓ Reaches Target!' : '✗ Does Not Reach Target'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeCalculator() {
+            gameState.calculatorMode = false;
+            document.getElementById('calculatorModal').classList.add('hidden');
+            document.getElementById('calculatorResult').innerHTML = '<div class="text-gray-500 text-center">Select a tile to begin</div>';
+            renderGrid();
+        }
+
+        function showParityIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'parity-indicator bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-2xl text-2xl font-bold orbitron shadow-2xl';
+            indicator.textContent = '🔮 PARITY PEEK ACTIVE (10s)';
+            document.body.appendChild(indicator);
+
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                indicator.style.transform = 'translate(-50%, -50%) scale(0)';
+                setTimeout(() => indicator.remove(), 500);
+            }, 2000);
+        }
+
+        // ===== EVENT HANDLERS =====
+        document.querySelectorAll('.operation-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                AudioSystem.playClick();
+                const operation = btn.dataset.op;
+                handleMove(operation);
+            });
+        });
+
+        document.getElementById('peekBtn').addEventListener('click', usePeek);
+        document.getElementById('rewindBtn').addEventListener('click', useRewind);
+        document.getElementById('calculatorBtn').addEventListener('click', useCalculator);
+        document.getElementById('closeCalculatorBtn').addEventListener('click', closeCalculator);
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            AudioSystem.playClick();
+            gameState.loadLevel(gameState.currentLevel);
+            updateUI();
+        });
+
+        document.getElementById('nextLevelBtn').addEventListener('click', () => {
+            closeModal('winModal');
+            if (gameState.currentLevel < LEVELS.length - 1) {
+                gameState.loadLevel(gameState.currentLevel + 1);
+            } else {
+                // Game completed!
+                alert('🎉 Congratulations! You completed all levels! Total Stars: ' + gameState.totalStars);
+                gameState.loadLevel(0); // Reset to first level
+                gameState.totalStars = 0;
+                gameState.powerUps = { peek: 0, rewind: 0, calculator: 0 };
+            }
+            updateUI();
+        });
+
+        document.getElementById('retryBtn').addEventListener('click', () => {
+            closeModal('loseModal');
+            gameState.loadLevel(gameState.currentLevel);
+            updateUI();
+        });
+
+        // ===== INITIALIZATION =====
+        function initGame() {
+            gameState.loadLevel(0);
+            updateUI();
+        }
+
+        // Start the game when page loads
+        window.addEventListener('load', initGame);
+
+        // Prevent pull-to-refresh on mobile
+        document.body.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.tile, .operation-btn, .power-up-btn')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
