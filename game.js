@@ -189,7 +189,8 @@ function renderGrid() {
         tile.className = 'tile bg-white rounded-xl flex items-center justify-center font-bold orbitron shadow-lg';
 
         // Responsive sizing
-        const sizeClass = gameState.gridSize === 3 ? 'text-3xl md:text-4xl p-6 md:p-8' :
+        const sizeClass = gameState.gridSize === 2 ? 'text-4xl md:text-5xl p-8 md:p-10' :
+                         gameState.gridSize === 3 ? 'text-3xl md:text-4xl p-6 md:p-8' :
                          gameState.gridSize === 4 ? 'text-2xl md:text-3xl p-4 md:p-6' :
                          'text-xl md:text-2xl p-3 md:p-4';
         tile.className += ' ' + sizeClass;
@@ -217,8 +218,14 @@ function renderGrid() {
 }
 
 function updateUI() {
-    // Update level and move display
-    document.getElementById('levelDisplay').textContent = gameState.currentLevel + 1;
+    // Update level and move display (hide level during tutorial)
+    const levelDisplay = document.getElementById('levelDisplay');
+    if (gameState.currentLevel === -1) {
+        levelDisplay.textContent = '?';
+    } else {
+        levelDisplay.textContent = gameState.currentLevel + 1;
+    }
+
     document.getElementById('moveDisplay').textContent =
         `${gameState.currentStepIndex + 1}/${gameState.operationSequence.length}`;
     document.getElementById('targetDisplay').textContent = gameState.targetNumber;
@@ -268,6 +275,12 @@ function highlightTile(index, isValid) {
 
 // ===== MODALS =====
 function showWin() {
+    // Check if in tutorial mode
+    if (window.TutorialSystem && window.TutorialSystem.state.active) {
+        window.TutorialSystem.handleWin();
+        return;
+    }
+
     AudioSystem.playWin();
 
     const level = LEVELS[gameState.currentLevel];
@@ -429,7 +442,16 @@ function initEventHandlers() {
     // Reset button
     document.getElementById('resetBtn').addEventListener('click', () => {
         AudioSystem.playClick();
-        gameState.loadLevel(gameState.currentLevel);
+        if (gameState.currentLevel === -1) {
+            // In tutorial mode, reload current tutorial level
+            const step = window.TutorialSystem.state.currentStep;
+            const tutorialStep = window.TUTORIAL_STEPS ? window.TUTORIAL_STEPS[step] : null;
+            if (tutorialStep && tutorialStep.level) {
+                window.TutorialSystem.loadTutorialLevel(tutorialStep.level, tutorialStep.autoShowConstraint);
+            }
+        } else {
+            gameState.loadLevel(gameState.currentLevel);
+        }
         updateUI();
     });
 
@@ -451,9 +473,75 @@ function initEventHandlers() {
     // Retry button
     document.getElementById('retryBtn').addEventListener('click', () => {
         closeModal('loseModal');
-        gameState.loadLevel(gameState.currentLevel);
+        if (gameState.currentLevel === -1) {
+            // In tutorial mode, reload current tutorial level
+            const step = window.TutorialSystem.state.currentStep;
+            const tutorialStep = window.TUTORIAL_STEPS ? window.TUTORIAL_STEPS[step] : null;
+            if (tutorialStep && tutorialStep.level) {
+                window.TutorialSystem.loadTutorialLevel(tutorialStep.level, tutorialStep.autoShowConstraint);
+            }
+        } else {
+            gameState.loadLevel(gameState.currentLevel);
+        }
         updateUI();
     });
+
+    // Tutorial buttons
+    const startTutorialBtn = document.getElementById('startTutorialBtn');
+    if (startTutorialBtn) {
+        startTutorialBtn.addEventListener('click', () => {
+            AudioSystem.playClick();
+            window.TutorialSystem.start();
+        });
+    }
+
+    const playGameBtn = document.getElementById('playGameBtn');
+    if (playGameBtn) {
+        playGameBtn.addEventListener('click', () => {
+            AudioSystem.playClick();
+            window.TutorialSystem.hideMenu();
+            gameState.loadLevel(0);
+            updateUI();
+        });
+    }
+
+    const replayTutorialBtn = document.getElementById('replayTutorialBtn');
+    if (replayTutorialBtn) {
+        replayTutorialBtn.addEventListener('click', () => {
+            AudioSystem.playClick();
+            window.TutorialSystem.start();
+        });
+    }
+
+    const tutorialNextBtn = document.getElementById('tutorialNextBtn');
+    if (tutorialNextBtn) {
+        tutorialNextBtn.addEventListener('click', () => {
+            AudioSystem.playClick();
+            window.TutorialSystem.next();
+        });
+    }
+
+    const tutorialSkipBtn = document.getElementById('tutorialSkipBtn');
+    if (tutorialSkipBtn) {
+        tutorialSkipBtn.addEventListener('click', () => {
+            window.TutorialSystem.skip();
+        });
+    }
+
+    const startGameBtn = document.getElementById('startGameBtn');
+    if (startGameBtn) {
+        startGameBtn.addEventListener('click', () => {
+            AudioSystem.playClick();
+            const modal = document.getElementById('tutorialCompleteModal');
+            const content = document.getElementById('tutorialCompleteContent');
+            content.style.transform = 'scale(0)';
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                gameState.loadLevel(0);
+                updateUI();
+            }, 300);
+        });
+    }
 
     // Prevent pull-to-refresh on mobile
     document.body.addEventListener('touchmove', (e) => {
@@ -465,9 +553,16 @@ function initEventHandlers() {
 
 // ===== INITIALIZATION =====
 function initGame() {
-    gameState.loadLevel(0);
-    updateUI();
     initEventHandlers();
+
+    // Check if tutorial system is available
+    if (window.TutorialSystem) {
+        window.TutorialSystem.init();
+    } else {
+        // Fallback to normal game start
+        gameState.loadLevel(0);
+        updateUI();
+    }
 }
 
 // Start the game when page loads

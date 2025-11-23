@@ -132,9 +132,73 @@
         </div>
     </div>
 
+    <!-- Main Menu Modal -->
+    <div id="mainMenu" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center">
+            <div class="text-6xl mb-4">⚛️</div>
+            <h1 class="text-4xl font-bold text-purple-600 orbitron mb-4">ATOMIC CHAIN</h1>
+            <p class="text-gray-600 text-lg mb-8">Master the Sequence. Respect the Parity.</p>
+
+            <button id="startTutorialBtn" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-xl w-full mb-4 hover:scale-105 transition-transform">
+                📚 HOW TO PLAY
+            </button>
+
+            <button id="playGameBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-bold text-xl w-full hover:scale-105 transition-transform">
+                ▶️ PLAY GAME
+            </button>
+
+            <button id="replayTutorialBtn" class="mt-4 text-purple-600 hover:text-purple-800 font-semibold text-sm">
+                Replay Tutorial
+            </button>
+        </div>
+    </div>
+
+    <!-- Tutorial Panel -->
+    <div id="tutorialPanel" class="hidden fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 border-purple-600 z-40 p-6 max-h-[50vh] overflow-y-auto">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex-1">
+                    <h3 id="tutorialTitle" class="text-2xl font-bold text-purple-600 orbitron mb-2">Tutorial Step</h3>
+                    <p id="tutorialProgress" class="text-sm text-gray-500">Step 1/13</p>
+                </div>
+                <button id="tutorialSkipBtn" class="text-gray-400 hover:text-gray-600 text-sm font-semibold">
+                    Skip Tutorial
+                </button>
+            </div>
+
+            <p id="tutorialMessage" class="text-gray-700 text-lg mb-3"></p>
+            <p id="tutorialInstruction" class="text-gray-600 mb-6 whitespace-pre-line"></p>
+
+            <button id="tutorialNextBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-xl font-bold text-lg hover:scale-105 transition-transform">
+                NEXT →
+            </button>
+        </div>
+    </div>
+
+    <!-- Tutorial Complete Modal -->
+    <div id="tutorialCompleteModal" class="hidden fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center transform scale-0 transition-transform duration-300" id="tutorialCompleteContent">
+            <div class="text-6xl mb-4">🎓</div>
+            <h2 class="text-4xl font-bold text-purple-600 orbitron mb-4">TUTORIAL COMPLETE!</h2>
+            <p class="text-gray-600 text-lg mb-6">You're now ready to master all 15 levels of Atomic Chain!</p>
+            <div class="bg-gradient-to-r from-purple-100 to-pink-100 p-4 rounded-xl mb-6">
+                <p class="text-sm text-gray-700">
+                    <strong>Remember:</strong><br>
+                    ✓ Follow the exact operation sequence<br>
+                    ✓ Pay attention to parity constraints<br>
+                    ✓ Use power-ups wisely!
+                </p>
+            </div>
+            <button id="startGameBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-bold text-xl w-full hover:scale-105 transition-transform">
+                START PLAYING →
+            </button>
+        </div>
+    </div>
+
     <!-- JavaScript Files -->
     <script src="levels.js"></script>
     <script src="audio.js"></script>
+    <script src="tutorial.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
