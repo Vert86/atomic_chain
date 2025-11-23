@@ -85,7 +85,7 @@ const TUTORIAL_STEPS = [
         id: 4,
         title: "Challenge 1: Simple Addition",
         message: "Let's practice! Make both tiles reach 2.",
-        instruction: "Click the +1 button when ready. Watch how the operation affects the tiles!",
+        instruction: "Look at the 'Next Operation' display, then click the matching button. Watch how the operation affects the tiles!",
         level: {
             gridSize: 2,
             target: 2,
@@ -111,7 +111,7 @@ const TUTORIAL_STEPS = [
         id: 6,
         title: "Challenge 2: Understanding Constraints",
         message: "Now let's see constraints in action. Make all tiles reach 4.",
-        instruction: "You'll need to use two operations in sequence: +1, then +1 again. Notice how constraints affect different tiles!",
+        instruction: "Watch the 'Next Operation' display and follow the sequence. Notice how different constraints affect different tiles!",
         level: {
             gridSize: 2,
             target: 4,
@@ -137,7 +137,7 @@ const TUTORIAL_STEPS = [
         id: 8,
         title: "Challenge 3: Using Multiplication",
         message: "Let's try multiplication! Make all tiles reach 4.",
-        instruction: "Use the sequence: ×2, then ×2 again. Watch how multiplication interacts with constraints!",
+        instruction: "Follow the operation sequence shown. Watch how multiplication interacts with constraints!",
         level: {
             gridSize: 2,
             target: 4,
@@ -154,7 +154,7 @@ const TUTORIAL_STEPS = [
         id: 9,
         title: "Challenge 4: Division Practice",
         message: "Now let's practice division. Make all tiles reach 1.",
-        instruction: "Use ÷2 to divide the tiles. Remember the parity constraint!",
+        instruction: "Apply the shown operation. Pay attention to the parity constraint!",
         level: {
             gridSize: 2,
             target: 1,
@@ -171,7 +171,7 @@ const TUTORIAL_STEPS = [
         id: 10,
         title: "Challenge 5: Complex Sequence",
         message: "Ready for a bigger challenge? Make all 4 tiles reach 0.",
-        instruction: "This requires a 3-step sequence. Think carefully about how each operation and constraint affects the tiles!",
+        instruction: "Follow the operation sequence. Observe carefully how each constraint affects which tiles change!",
         level: {
             gridSize: 2,
             target: 0,
@@ -197,7 +197,7 @@ const TUTORIAL_STEPS = [
         id: 12,
         title: "Final Challenge: Put It All Together!",
         message: "One last challenge before you're ready! Make all 9 tiles reach 0.",
-        instruction: "This is similar to Level 1, but you've got this! Use the 3-step sequence shown.",
+        instruction: "This is your final test. Follow the sequence and watch how the constraints guide the tiles to the target!",
         level: {
             gridSize: 3,
             target: 0,
