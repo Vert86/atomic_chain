@@ -85,7 +85,7 @@ const TUTORIAL_STEPS = [
         id: 4,
         title: "Step 4: Parity Constraints",
         message: "Here's the twist: Each move has a parity constraint (EVEN or ODD).",
-        instruction: "Operations only affect tiles where the RESULT matches the current parity. For example, if parity is EVEN, only tiles that become even numbers will change!",
+        instruction: "A tile only changes if the RESULT is the required parity.\n\nExample: Parity is ODD, you use +1\n• Tile 2 → 3 (odd) ✓ Changes!\n• Tile 3 → 4 (even) ✗ Stays at 3",
         level: null,
         showNext: true,
         highlightElements: ['constraintDisplay']
