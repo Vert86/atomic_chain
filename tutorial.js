@@ -48,7 +48,7 @@ const TUTORIAL_STEPS = [
     {
         id: 0,
         title: "Welcome to Atomic Chain! ⚛️",
-        message: "Let's learn how to play! In this game, you'll transform numbers on a grid to reach a target value.",
+        message: "A strategic math puzzle where you choose your own path to victory!",
         instruction: "Click 'Next' to begin the tutorial.",
         level: null,
         showNext: true,
@@ -56,165 +56,140 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 1,
-        title: "Step 1: Understanding the Grid",
-        message: "You have a grid of numbers. Your goal is to make ALL tiles show the same target number.",
-        instruction: "Look at the grid below. The target is shown in the Game Info panel above.",
+        title: "Step 1: The Goal",
+        message: "Your goal is to make ALL tiles on the grid show the same target number.",
+        instruction: "Look at the grid below and the 'Target' in the info panel. You need to transform all tiles to match that target.",
         level: null,
         showNext: true,
         highlightElements: ['gameGrid', 'targetDisplay']
     },
     {
         id: 2,
-        title: "Step 2: Operations",
-        message: "You transform tiles using math operations like +1, -1, ×2, or ÷2.",
-        instruction: "The 'Next Operation' shows which operation you MUST use next. You must follow the exact sequence!",
+        title: "Step 2: Choose Your Operations",
+        message: "You can choose ANY operation from the buttons below! No fixed sequence - you create your own strategy.",
+        instruction: "Operations include +1, -1, ×2, ÷2, and more. You decide which ones to use and when!",
         level: null,
         showNext: true,
-        highlightElements: ['currentOperation']
+        highlightElements: []
     },
     {
         id: 3,
-        title: "Step 3: Parity Constraints",
-        message: "Here's the twist: Each operation only affects tiles that meet a parity rule (even or odd).",
-        instruction: "For example, if the constraint is 'MUST BE EVEN', only tiles that become even numbers after the operation will change. Others stay the same!",
+        title: "Step 3: Move Limit",
+        message: "Each level has a move limit. You must reach the target before running out of moves!",
+        instruction: "The 'Moves' counter shows how many moves you have left. Plan carefully!",
+        level: null,
+        showNext: true,
+        highlightElements: ['moveDisplay']
+    },
+    {
+        id: 4,
+        title: "Step 4: Parity Constraints",
+        message: "Here's the twist: Each move has a parity constraint (EVEN or ODD).",
+        instruction: "Operations only affect tiles where the RESULT matches the current parity. For example, if parity is EVEN, only tiles that become even numbers will change!",
         level: null,
         showNext: true,
         highlightElements: ['constraintDisplay']
     },
     {
-        id: 4,
-        title: "Challenge 1: Simple Addition",
-        message: "Let's practice! Make both tiles reach 2.",
-        instruction: "Look at the 'Next Operation' display, then click the matching button. Watch how the operation affects the tiles!",
+        id: 5,
+        title: "Challenge 1: Your First Strategy",
+        message: "Make both tiles reach 2. You have 2 moves!",
+        instruction: "Try +1 first. Watch which tiles change based on the parity constraint. Choose your operations wisely!",
         level: {
             gridSize: 2,
             target: 2,
             initialGrid: [1, 1],
-            sequence: ["+1"],
-            constraints: ["even"],
+            maxMoves: 2,
+            constraintPattern: ["even", "odd"],
             powerUpReward: null
         },
         showNext: false,
-        highlightElements: ['currentOperation'],
-        autoShowConstraint: true
+        highlightElements: [],
+        autoShowConstraint: false
     },
     {
-        id: 5,
+        id: 6,
         title: "Great Job! 🎉",
-        message: "You completed your first challenge! Notice how both tiles changed to 2 because they met the 'even' constraint after adding 1.",
-        instruction: "Click 'Next' to continue.",
+        message: "You created your first strategy! Notice how the parity constraint changed after your first move.",
+        instruction: "The constraint cycles through a pattern. Learn the pattern to plan ahead!",
         level: null,
         showNext: true,
         highlightElements: []
     },
     {
-        id: 6,
-        title: "Challenge 2: Understanding Constraints",
-        message: "Now let's see constraints in action. Make all tiles reach 4.",
-        instruction: "Watch the 'Next Operation' display and follow the sequence. Notice how different constraints affect different tiles!",
+        id: 7,
+        title: "Challenge 2: Strategic Thinking",
+        message: "Make all tiles reach 4. You have 3 moves.",
+        instruction: "This time you need to think strategically about WHICH operations to use. There are multiple solutions!",
         level: {
             gridSize: 2,
             target: 4,
             initialGrid: [2, 3],
-            sequence: ["+1", "+1"],
-            constraints: ["even", "odd"],
+            maxMoves: 3,
+            constraintPattern: ["even", "odd", "even"],
             powerUpReward: null
         },
         showNext: false,
-        highlightElements: ['currentOperation', 'moveDisplay'],
-        autoShowConstraint: true
+        highlightElements: [],
+        autoShowConstraint: false
     },
     {
-        id: 7,
+        id: 8,
         title: "Excellent! ⭐",
-        message: "Did you notice? The first +1 only changed the tile that became even (3→4). The second +1 only changed tiles that became odd (2→3).",
-        instruction: "This is the core mechanic of Atomic Chain!",
+        message: "You're mastering the art of strategic planning!",
+        instruction: "Different operations can lead to the same goal. The key is understanding how parity affects each tile.",
         level: null,
         showNext: true,
         highlightElements: []
     },
     {
-        id: 8,
-        title: "Challenge 3: Using Multiplication",
-        message: "Let's try multiplication! Make all tiles reach 4.",
-        instruction: "Follow the operation sequence shown. Watch how multiplication interacts with constraints!",
-        level: {
-            gridSize: 2,
-            target: 4,
-            initialGrid: [1, 1],
-            sequence: ["×2", "×2"],
-            constraints: ["even", "even"],
-            powerUpReward: null
-        },
-        showNext: false,
-        highlightElements: ['currentOperation'],
-        autoShowConstraint: true
-    },
-    {
         id: 9,
-        title: "Challenge 4: Division Practice",
-        message: "Now let's practice division. Make all tiles reach 1.",
-        instruction: "Apply the shown operation. Pay attention to the parity constraint!",
-        level: {
-            gridSize: 2,
-            target: 1,
-            initialGrid: [2, 2],
-            sequence: ["÷2"],
-            constraints: ["odd"],
-            powerUpReward: null
-        },
-        showNext: false,
-        highlightElements: ['currentOperation'],
-        autoShowConstraint: true
-    },
-    {
-        id: 10,
-        title: "Challenge 5: Complex Sequence",
-        message: "Ready for a bigger challenge? Make all 4 tiles reach 0.",
-        instruction: "Follow the operation sequence. Observe carefully how each constraint affects which tiles change!",
+        title: "Challenge 3: Multiple Strategies",
+        message: "Make all tiles reach 0. You have 4 moves.",
+        instruction: "Think about how different operations interact with the parity constraints. Plan your strategy!",
         level: {
             gridSize: 2,
             target: 0,
             initialGrid: [1, 2, 3, 4],
-            sequence: ["-1", "+1", "-1"],
-            constraints: ["even", "odd", "even"],
+            maxMoves: 4,
+            constraintPattern: ["even", "odd", "even", "odd"],
             powerUpReward: null
         },
         showNext: false,
-        highlightElements: ['currentOperation', 'moveDisplay'],
-        autoShowConstraint: true
+        highlightElements: [],
+        autoShowConstraint: false
     },
     {
-        id: 11,
-        title: "Power-Ups Overview",
-        message: "You'll earn power-ups as you progress! Let me show you what they do:",
-        instruction: "🔮 Parity Peek: Reveals constraints for 10 seconds\n⏪ Rewind: Undo your last move\n🧮 Calculator: Shows how each tile will transform",
+        id: 10,
+        title: "Power-Ups: Your Strategic Tools",
+        message: "You'll earn power-ups as you progress! They help you solve tougher puzzles:",
+        instruction: "🔮 Parity Peek: Reveals exact constraint details\n⏪ Rewind: Undo your last move\n🧮 Calculator: Shows how each operation affects a tile",
         level: null,
         showNext: true,
         highlightElements: ['peekBtn', 'rewindBtn', 'calculatorBtn']
     },
     {
-        id: 12,
+        id: 11,
         title: "Final Challenge: Put It All Together!",
-        message: "One last challenge before you're ready! Make all 9 tiles reach 0.",
-        instruction: "This is your final test. Follow the sequence and watch how the constraints guide the tiles to the target!",
+        message: "Make all 9 tiles reach 0. You have 5 moves!",
+        instruction: "This is your final test. Use strategic thinking to find an efficient solution!",
         level: {
             gridSize: 3,
             target: 0,
             initialGrid: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-            sequence: ["-1", "-1", "+3"],
-            constraints: ["odd", "even", "odd"],
+            maxMoves: 5,
+            constraintPattern: ["odd", "even", "odd", "even"],
             powerUpReward: "peek"
         },
         showNext: false,
         highlightElements: [],
-        autoShowConstraint: true
+        autoShowConstraint: false
     },
     {
-        id: 13,
+        id: 12,
         title: "Tutorial Complete! 🎊",
-        message: "Congratulations! You've mastered the basics of Atomic Chain!",
-        instruction: "You're now ready to tackle all 15 levels. Good luck, and remember:\n• Follow the exact operation sequence\n• Pay attention to parity constraints\n• Use power-ups wisely!",
+        message: "Congratulations! You've mastered the strategic gameplay of Atomic Chain!",
+        instruction: "You're now ready to tackle all 15 levels. Remember:\n• Choose operations strategically\n• Pay attention to parity patterns\n• Complete within the move limit!",
         level: null,
         showNext: true,
         highlightElements: [],
@@ -298,13 +273,14 @@ function loadTutorialLevel(levelData, autoShowConstraint = false) {
 
     // Load into game state (using global gameState from game.js)
     gameState.grid = [...tutorialLevel.initialGrid];
-    gameState.operationSequence = [...tutorialLevel.sequence];
-    gameState.currentStepIndex = 0;
+    gameState.movesUsed = 0;
+    gameState.maxMoves = tutorialLevel.maxMoves || 3;
     gameState.targetNumber = tutorialLevel.target;
     gameState.gridSize = tutorialLevel.gridSize;
-    gameState.constraints = [...tutorialLevel.constraints];
+    gameState.constraintPattern = tutorialLevel.constraintPattern || ["even", "odd"];
     gameState.lastState = null;
     gameState.calculatorMode = false;
+    gameState.moveHistory = [];
 
     // Auto-show constraint if requested
     if (autoShowConstraint) {

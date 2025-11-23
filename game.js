@@ -8,11 +8,11 @@ class GameState {
     constructor() {
         this.currentLevel = 0;
         this.grid = [];
-        this.operationSequence = [];
-        this.currentStepIndex = 0;
+        this.movesUsed = 0;
+        this.maxMoves = 5;
         this.targetNumber = 0;
         this.gridSize = 3;
-        this.constraints = [];
+        this.constraintPattern = [];
         this.powerUps = {
             peek: 0,
             rewind: 0,
@@ -23,6 +23,7 @@ class GameState {
         this.calculatorMode = false;
         this.peekActive = false;
         this.peekTimeout = null;
+        this.moveHistory = []; // Track all moves for calculator
     }
 
     loadLevel(levelIndex) {
@@ -31,14 +32,15 @@ class GameState {
 
         this.currentLevel = levelIndex;
         this.grid = [...level.initialGrid];
-        this.operationSequence = [...level.sequence];
-        this.currentStepIndex = 0;
+        this.movesUsed = 0;
+        this.maxMoves = level.maxMoves || 5;
         this.targetNumber = level.target;
         this.gridSize = level.gridSize;
-        this.constraints = [...level.constraints];
+        this.constraintPattern = level.constraintPattern || ["even", "odd"];
         this.lastState = null;
         this.calculatorMode = false;
         this.peekActive = false;
+        this.moveHistory = [];
 
         return true;
     }
@@ -46,16 +48,23 @@ class GameState {
     saveState() {
         this.lastState = {
             grid: [...this.grid],
-            currentStepIndex: this.currentStepIndex
+            movesUsed: this.movesUsed,
+            moveHistory: [...this.moveHistory]
         };
     }
 
     restoreState() {
         if (!this.lastState) return false;
         this.grid = [...this.lastState.grid];
-        this.currentStepIndex = this.lastState.currentStepIndex;
+        this.movesUsed = this.lastState.movesUsed;
+        this.moveHistory = [...this.lastState.moveHistory];
         this.lastState = null;
         return true;
+    }
+
+    getCurrentConstraint() {
+        // Cycle through constraint pattern based on moves used
+        return this.constraintPattern[this.movesUsed % this.constraintPattern.length];
     }
 
     addPowerUp(type) {
@@ -118,22 +127,16 @@ function checkConstraint(result, constraint) {
 
 // ===== CORE GAME LOGIC =====
 function handleMove(selectedOperation) {
-    // CHECK 1: Sequence Match
-    const requiredOperation = gameState.operationSequence[gameState.currentStepIndex];
-    if (selectedOperation !== requiredOperation) {
-        showFailure("Wrong operation! Expected: " + requiredOperation);
-        return false;
-    }
-
     // Save state for rewind
     gameState.saveState();
 
-    // CHECK 2: Parity/Constraint Match & Execution
-    const constraint = gameState.constraints[gameState.currentStepIndex];
+    // Get current constraint
+    const constraint = gameState.getCurrentConstraint();
     const newGrid = [];
     let validMoves = 0;
     let invalidMoves = 0;
 
+    // Apply operation with constraint
     for (let i = 0; i < gameState.grid.length; i++) {
         const oldValue = gameState.grid[i];
         const newValue = applyOperation(oldValue, selectedOperation);
@@ -149,15 +152,19 @@ function handleMove(selectedOperation) {
         }
     }
 
-    // Update grid
+    // Update grid and move count
     gameState.grid = newGrid;
-    gameState.currentStepIndex++;
+    gameState.movesUsed++;
+    gameState.moveHistory.push({
+        operation: selectedOperation,
+        constraint: constraint
+    });
 
     // Wait for animation, then check win/loss
     setTimeout(() => {
         updateUI();
 
-        // CHECK 3: Win/Loss
+        // Check for win condition
         const allTarget = gameState.grid.every(n => n === gameState.targetNumber);
 
         if (allTarget) {
@@ -165,8 +172,9 @@ function handleMove(selectedOperation) {
             return true;
         }
 
-        if (gameState.currentStepIndex >= gameState.operationSequence.length) {
-            showFailure("Sequence exhausted! Not all tiles reached the target.");
+        // Check for loss condition (out of moves)
+        if (gameState.movesUsed >= gameState.maxMoves) {
+            showFailure("Out of moves! Try a different strategy.");
             return false;
         }
 
@@ -226,26 +234,24 @@ function updateUI() {
         levelDisplay.textContent = gameState.currentLevel + 1;
     }
 
-    document.getElementById('moveDisplay').textContent =
-        `${gameState.currentStepIndex + 1}/${gameState.operationSequence.length}`;
+    // Update moves remaining
+    const movesLeft = gameState.maxMoves - gameState.movesUsed;
+    document.getElementById('moveDisplay').textContent = `${movesLeft} left`;
     document.getElementById('targetDisplay').textContent = gameState.targetNumber;
     document.getElementById('starsDisplay').textContent = '⭐' + gameState.totalStars;
 
-    // Update current operation
-    const currentOp = gameState.operationSequence[gameState.currentStepIndex];
-    if (currentOp) {
-        document.getElementById('currentOperation').textContent = currentOp;
-
-        // Show constraint if peek is active
+    // Update current constraint display
+    const currentConstraint = gameState.getCurrentConstraint();
+    if (currentConstraint && gameState.movesUsed < gameState.maxMoves) {
+        // Show constraint if peek is active or always visible
         if (gameState.peekActive) {
-            const constraint = gameState.constraints[gameState.currentStepIndex];
             document.getElementById('constraintDisplay').textContent =
-                `MUST BE ${constraint.toUpperCase()}`;
+                `NEXT RESULT MUST BE ${currentConstraint.toUpperCase()}`;
         } else {
-            document.getElementById('constraintDisplay').textContent = '';
+            document.getElementById('constraintDisplay').textContent =
+                `Parity: ${currentConstraint.toUpperCase()}`;
         }
     } else {
-        document.getElementById('currentOperation').textContent = '—';
         document.getElementById('constraintDisplay').textContent = '';
     }
 
@@ -371,35 +377,43 @@ function useCalculator() {
 
 function showCalculatorPath(tileIndex) {
     const startValue = gameState.grid[tileIndex];
-    let currentValue = startValue;
-    const path = [currentValue];
+    const operations = ["+1", "-1", "×2", "÷2", "+3", "-3", "+5", "-5"];
+    const currentConstraint = gameState.getCurrentConstraint();
 
-    // Simulate remaining operations
-    for (let i = gameState.currentStepIndex; i < gameState.operationSequence.length; i++) {
-        const op = gameState.operationSequence[i];
-        const constraint = gameState.constraints[i];
-        const newValue = applyOperation(currentValue, op);
-
-        if (checkConstraint(newValue, constraint)) {
-            currentValue = newValue;
-        } // else keep same value
-
-        path.push(currentValue);
-    }
-
-    // Display path
+    // Show what each operation would do to this tile
     const resultDiv = document.getElementById('calculatorResult');
-    resultDiv.innerHTML = `
+    let html = `
         <div class="text-center">
-            <div class="text-sm text-gray-600 mb-2">Transformation Path:</div>
-            <div class="text-2xl font-bold orbitron text-purple-600">
-                ${path.join(' → ')}
+            <div class="text-sm text-gray-600 mb-3">Tile Value: <span class="font-bold text-purple-600 text-xl">${startValue}</span></div>
+            <div class="text-xs text-gray-500 mb-3">Current Constraint: ${currentConstraint.toUpperCase()}</div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+    `;
+
+    operations.forEach(op => {
+        const newValue = applyOperation(startValue, op);
+        const meetsConstraint = checkConstraint(newValue, currentConstraint);
+        const wouldChange = meetsConstraint;
+        const resultValue = wouldChange ? newValue : startValue;
+        const color = wouldChange ? 'text-green-600' : 'text-gray-400';
+
+        html += `
+            <div class="p-2 bg-gray-50 rounded ${wouldChange ? 'border-2 border-green-500' : ''}">
+                <div class="font-bold ${color}">${op}</div>
+                <div class="${color}">${startValue} → ${resultValue}</div>
+                <div class="text-xs ${color}">${wouldChange ? '✓ Changes' : '✗ No change'}</div>
             </div>
-            <div class="mt-4 text-sm ${path[path.length - 1] === gameState.targetNumber ? 'text-green-600' : 'text-red-600'}">
-                ${path[path.length - 1] === gameState.targetNumber ? '✓ Reaches Target!' : '✗ Does Not Reach Target'}
+        `;
+    });
+
+    html += `
+            </div>
+            <div class="mt-3 text-xs text-gray-600">
+                Operations only affect tiles when result matches the parity constraint
             </div>
         </div>
     `;
+
+    resultDiv.innerHTML = html;
 }
 
 function closeCalculator() {
